@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — QuizLens{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Class Performance Overview</h2>
+        <p class="text-muted mb-0">Diagnostic analytics and insights across all student quiz responses</p>
+    </div>
+    <div class="dropdown">
+        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+            📥 Export CSV
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end">
+            <li><a class="dropdown-item" href="/export/students">Students Performance CSV</a></li>
+            <li><a class="dropdown-item" href="/export/questions">Questions Error Rates CSV</a></li>
+            <li><a class="dropdown-item" href="/export/topics">Topic Analysis CSV</a></li>
+        </ul>
+    </div>
+</div>
+
+<!-- Rule-Based Alert Banner if flags are present -->
+{% if flagged_questions|length > 0 or flagged_topics|length > 0 %}
+<div class="alert alert-warning border-0 shadow-sm d-flex align-items-center mb-4" role="alert">
+    <div class="fs-4 me-3">⚠️</div>
+    <div>
+        <strong>Attention Needed:</strong>
+        {{ flagged_questions|length }} question(s) have an error rate &ge; 50%, and
+        {{ flagged_topics|length }} topic(s) have an accuracy &lt; 60%.
+        <a href="#flagged-section" class="alert-link ms-2">View flagged items below &darr;</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Key Metrics Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card p-3 bg-white">
+            <span class="text-muted small text-uppercase fw-bold">Total Students</span>
+            <div class="d-flex align-items-baseline mt-2">
+                <h2 class="fw-bold mb-0">{{ summary.total_students }}</h2>
+                <span class="text-muted ms-2 small">enrolled</span>
+            </div>
+            <div class="small text-muted mt-2">Total responses: {{ summary.total_responses }}</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 bg-white">
+            <span class="text-muted small text-uppercase fw-bold">Class Accuracy</span>
+            <div class="d-flex align-items-baseline mt-2">
+                <h2 class="fw-bold mb-0 text-primary">{{ summary.class_accuracy }}%</h2>
+            </div>
+            <div class="small text-muted mt-2">{{ summary.total_correct }} of {{ summary.total_responses }} correct</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 bg-white">
+            <span class="text-muted small text-uppercase fw-bold">Average Score</span>
+            <div class="d-flex align-items-baseline mt-2">
+                <h2 class="fw-bold mb-0 text-success">{{ summary.avg_score_per_student }}</h2>
+                <span class="text-muted ms-2">/ {{ summary.max_possible_per_student }} marks</span>
+            </div>
+            <div class="small text-muted mt-2">Across all 3 quizzes</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card p-3 bg-white">
+            <span class="text-muted small text-uppercase fw-bold">Flagged Areas</span>
+            <div class="d-flex align-items-baseline mt-2">
+                <h2 class="fw-bold mb-0 text-danger">{{ flagged_questions|length }}</h2>
+                <span class="text-muted ms-2 small">questions flagged</span>
+            </div>
+            <div class="small text-danger mt-2">{{ flagged_topics|length }} topics under 60% accuracy</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mb-4">
+    <!-- Quiz Comparison Chart -->
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h5 class="fw-bold mb-3">Quiz Performance Comparison</h5>
+            <p class="text-muted small mb-2">Average score obtained per student (out of 15 marks)</p>
+            <div style="position: relative; height: 260px;">
+                <canvas id="quizChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Topic Accuracy Chart -->
+    <div class="col-lg-6">
+        <div class="card p-3 h-100">
+            <h5 class="fw-bold mb-3">Topic Accuracy Rates</h5>
+            <p class="text-muted small mb-2">Percentage of correct responses per topic (Red line indicates 60% threshold)</p>
+            <div style="position: relative; height: 260px;">
+                <canvas id="topicChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Flagged Items Section -->
+<div id="flagged-section" class="card mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-danger">⚠️ Questions with High Incorrect Response Rate (&ge; 50%)</h5>
+            <small class="text-muted">These questions may indicate confusing wording, misconceptions, or untaught concepts.</small>
+        </div>
+        <a href="/questions" class="btn btn-sm btn-outline-danger">View All Questions &rarr;</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Q#</th>
+                    <th>Quiz</th>
+                    <th>Topic</th>
+                    <th>Question Text</th>
+                    <th>Correct Answer</th>
+                    <th>Incorrect Rate</th>
+                    <th>Avg Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in flagged_questions %}
+                <tr>
+                    <td class="fw-bold">#{{ q.id }}</td>
+                    <td><small class="text-muted">{{ q.quiz_title.split(':')[0] }}</small></td>
+                    <td><span class="badge bg-light text-dark border">{{ q.topic }}</span></td>
+                    <td style="max-width: 320px;">{{ q.question_text }}</td>
+                    <td><span class="badge bg-secondary">{{ q.correct_answer }}</span></td>
+                    <td>
+                        <div class="fw-bold text-danger">{{ q.incorrect_rate_pct }}%</div>
+                        <small class="text-muted">{{ q.incorrect_count }} / {{ q.total_responses }} wrong</small>
+                    </td>
+                    <td>{{ q.avg_time_sec }}s</td>
+                    <td>
+                        <span class="badge bg-danger">Flagged</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Flagged Weak Topics Section -->
+<div class="card mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="fw-bold mb-0 text-warning-emphasis">⚠️ Topics Needing Review (&lt; 60% Accuracy)</h5>
+            <small class="text-muted">Topics where overall student comprehension is below the acceptable threshold.</small>
+        </div>
+        <a href="/topics" class="btn btn-sm btn-outline-secondary">View All Topics &rarr;</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Topic</th>
+                    <th>Questions</th>
+                    <th>Total Responses</th>
+                    <th>Accuracy</th>
+                    <th>Avg Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in flagged_topics %}
+                <tr>
+                    <td class="fw-bold">{{ t.topic }}</td>
+                    <td>{{ t.question_count }}</td>
+                    <td>{{ t.total_responses }}</td>
+                    <td>
+                        <span class="fw-bold text-danger">{{ t.accuracy_pct }}%</span>
+                    </td>
+                    <td>{{ t.avg_time_sec }}s</td>
+                    <td>
+                        <span class="badge bg-warning text-dark">Review Recommended</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 1. Quiz Comparison Chart
+    const quizLabels = {{ quiz_labels | tojson }};
+    const quizScores = {{ quiz_scores | tojson }};
+
+    new Chart(document.getElementById('quizChart'), {
+        type: 'bar',
+        data: {
+            labels: quizLabels,
+            datasets: [{
+                label: 'Average Score (out of 15)',
+                data: quizScores,
+                backgroundColor: ['#0d6efd', '#20c997', '#ffc107'],
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 15,
+                    title: { display: true, text: 'Average Score' }
+                }
+            }
+        }
+    });
+
+    // 2. Topic Accuracy Chart
+    const topicLabels = {{ topic_labels | tojson }};
+    const topicAccuracies = {{ topic_accuracies | tojson }};
+
+    // Color bars: red if < 60%, green if >= 60%
+    const barColors = topicAccuracies.map(acc => acc < 60 ? '#dc3545' : '#198754');
+
+    new Chart(document.getElementById('topicChart'), {
+        type: 'bar',
+        data: {
+            labels: topicLabels,
+            datasets: [{
+                label: 'Accuracy (%)',
+                data: topicAccuracies,
+                backgroundColor: barColors,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: { display: true, text: 'Accuracy (%)' }
+                },
+                x: {
+                    ticks: {
+                        autoSkip: false,
+                        maxRotation: 45,
+                        minRotation: 30,
+                        font: { size: 10 }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Quizzes — QuizLens{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Quiz Comparison & Trends</h2>
+        <p class="text-muted mb-0">Evaluate student performance differences across different quiz assessments</p>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    {% for q in quizzes %}
+    <div class="col-md-4">
+        <div class="card p-3 h-100">
+            <span class="badge bg-primary-subtle text-primary border mb-2 w-auto align-self-start">{{ q.date }}</span>
+            <h5 class="fw-bold mb-1">{{ q.title }}</h5>
+            <div class="text-muted small mb-3">Total Marks Possible: {{ q.total_marks }}</div>
+
+            <div class="mb-3">
+                <span class="text-muted small">Average Score Obtained</span>
+                <div class="d-flex align-items-baseline">
+                    <h3 class="fw-bold mb-0 text-primary">{{ q.avg_student_score }}</h3>
+                    <span class="text-muted ms-2">/ {{ q.total_marks }}</span>
+                </div>
+            </div>
+
+            <div class="row g-2 mb-3">
+                <div class="col-6">
+                    <div class="bg-light p-2 rounded">
+                        <small class="text-muted d-block">Overall Accuracy</small>
+                        <strong class="{% if q.accuracy_pct >= 70 %}text-success{% elif q.accuracy_pct >= 55 %}text-warning{% else %}text-danger{% endif %}">
+                            {{ q.accuracy_pct }}%
+                        </strong>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="bg-light p-2 rounded">
+                        <small class="text-muted d-block">Avg Time</small>
+                        <strong>{{ q.avg_time_sec }}s</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-auto pt-2 border-top small text-muted d-flex justify-content-between">
+                <span>{{ q.student_count }} Students</span>
+                <span>{{ q.total_responses }} Responses</span>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Comparison Table -->
+<div class="card mb-4">
+    <div class="card-header bg-white py-3">
+        <h5 class="fw-bold mb-0">Detailed Comparison Table</h5>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Quiz Title</th>
+                    <th>Date Conducted</th>
+                    <th>Submissions</th>
+                    <th>Total Responses</th>
+                    <th>Average Score</th>
+                    <th>Accuracy (%)</th>
+                    <th>Avg Response Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in quizzes %}
+                <tr>
+                    <td>{{ q.id }}</td>
+                    <td class="fw-bold">{{ q.title }}</td>
+                    <td>{{ q.date }}</td>
+                    <td>{{ q.student_count }} students</td>
+                    <td>{{ q.total_responses }}</td>
+                    <td><strong>{{ q.avg_student_score }}</strong> / {{ q.total_marks }}</td>
+                    <td>
+                        <span class="badge {% if q.accuracy_pct >= 70 %}bg-success{% elif q.accuracy_pct >= 55 %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                            {{ q.accuracy_pct }}%
+                        </span>
+                    </td>
+                    <td>{{ q.avg_time_sec }} seconds</td>
+                    <td>
+                        <a href="/questions?quiz_id={{ q.id }}" class="btn btn-sm btn-outline-secondary">
+                            View Questions
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

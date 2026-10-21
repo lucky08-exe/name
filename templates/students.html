@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Students — QuizLens{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Student Performance Summary</h2>
+        <p class="text-muted mb-0">Individual marks, percentages, accuracy, and average response times</p>
+    </div>
+    <div>
+        <a href="/export/students" class="btn btn-outline-primary">
+            📥 Export Students CSV
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Total Students: {{ students|length }}</span>
+        <div class="small text-muted">Click on a student's name to view their detailed performance breakdown</div>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Total Answered</th>
+                    <th>Correct</th>
+                    <th>Incorrect</th>
+                    <th>Total Marks</th>
+                    <th>Percentage</th>
+                    <th>Avg Time</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in students %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><code>{{ s.student_code }}</code></td>
+                    <td class="fw-bold">
+                        <a href="/students/{{ s.id }}" class="text-decoration-none text-dark">
+                            {{ s.name }} &rarr;
+                        </a>
+                    </td>
+                    <td>{{ s.total_answered }}</td>
+                    <td><span class="text-success fw-bold">{{ s.correct_answers }}</span></td>
+                    <td><span class="text-danger">{{ s.incorrect_answers }}</span></td>
+                    <td><strong>{{ s.total_marks }}</strong> / {{ s.max_marks }}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold me-2">{{ s.percentage }}%</span>
+                            <div class="progress flex-grow-1" style="height: 6px;">
+                                <div class="progress-bar {% if s.percentage >= 75 %}bg-success{% elif s.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+                                     role="progressbar" style="width: {{ s.percentage }}%;"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ s.avg_time }}s</td>
+                    <td>
+                        <a href="/students/{{ s.id }}" class="btn btn-sm btn-outline-secondary">
+                            View Report
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

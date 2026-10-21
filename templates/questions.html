@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Question Analysis — QuizLens{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Question-Level Analysis</h2>
+        <p class="text-muted mb-0">Inspect error rates, response times, and rule-based diagnostic flags</p>
+    </div>
+    <div>
+        <a href="/export/questions" class="btn btn-outline-primary">
+            📥 Export Questions CSV
+        </a>
+    </div>
+</div>
+
+<!-- Filter controls -->
+<div class="card p-3 mb-4">
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="fw-bold text-muted small me-2">Filter By Quiz:</span>
+        <a href="/questions" class="btn btn-sm {% if not selected_quiz_id and not show_flagged_only %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            All Questions (45)
+        </a>
+        <a href="/questions?quiz_id=1" class="btn btn-sm {% if selected_quiz_id == 1 %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            Quiz 1
+        </a>
+        <a href="/questions?quiz_id=2" class="btn btn-sm {% if selected_quiz_id == 2 %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            Quiz 2
+        </a>
+        <a href="/questions?quiz_id=3" class="btn btn-sm {% if selected_quiz_id == 3 %}btn-dark{% else %}btn-outline-secondary{% endif %}">
+            Quiz 3
+        </a>
+        <div class="ms-auto">
+            <a href="/questions?flagged=1" class="btn btn-sm {% if show_flagged_only %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                ⚠️ Show Only Flagged Questions (&ge; 50% Error)
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-bold">Displaying {{ questions|length }} Question(s)</span>
+        <small class="text-muted">Questions with error rate &ge; 50% are automatically flagged for review</small>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Q#</th>
+                    <th>Quiz</th>
+                    <th>Topic</th>
+                    <th>Question Text</th>
+                    <th>Answer</th>
+                    <th>Responses</th>
+                    <th>Correct</th>
+                    <th>Incorrect</th>
+                    <th>Incorrect Rate</th>
+                    <th>Avg Time</th>
+                    <th>Diagnostic Flag</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for q in questions %}
+                <tr {% if q.is_flagged %}class="table-danger-subtle"{% endif %}>
+                    <td class="fw-bold">#{{ q.id }}</td>
+                    <td><small class="text-muted">{{ q.quiz_title.split(':')[0] }}</small></td>
+                    <td><span class="badge bg-light text-dark border">{{ q.topic }}</span></td>
+                    <td style="max-width: 300px;">{{ q.question_text }}</td>
+                    <td><span class="badge bg-secondary">{{ q.correct_answer }}</span></td>
+                    <td>{{ q.total_responses }}</td>
+                    <td><span class="text-success fw-bold">{{ q.correct_count }}</span></td>
+                    <td><span class="text-danger fw-bold">{{ q.incorrect_count }}</span></td>
+                    <td>
+                        <span class="fw-bold {% if q.incorrect_rate_pct >= 50 %}text-danger{% else %}text-muted{% endif %}">
+                            {{ q.incorrect_rate_pct }}%
+                        </span>
+                    </td>
+                    <td>{{ q.avg_time_sec }}s</td>
+                    <td>
+                        {% if q.is_flagged %}
+                            <span class="badge bg-danger" title="{{ q.flag_reason }}">
+                                ⚠️ High Error Rate
+                            </span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success">
+                                Normal
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

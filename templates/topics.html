@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block title %}Topic Analysis — QuizLens{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-0">Topic Performance Breakdown</h2>
+        <p class="text-muted mb-0">Discover student subject strengths and curriculum topics that require review</p>
+    </div>
+    <div>
+        <a href="/export/topics" class="btn btn-outline-primary">
+            📥 Export Topics CSV
+        </a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <span class="fw-bold">All Topics ({{ topics|length }})</span>
+        <small class="text-muted">Rule: Topics with &lt; 60% class accuracy are flagged as Weak Topics</small>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Topic</th>
+                    <th>Questions</th>
+                    <th>Total Responses</th>
+                    <th>Correct</th>
+                    <th>Incorrect</th>
+                    <th>Accuracy (%)</th>
+                    <th>Avg Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in topics %}
+                <tr {% if t.is_flagged %}class="table-warning-subtle"{% endif %}>
+                    <td>{{ loop.index }}</td>
+                    <td class="fw-bold">{{ t.topic }}</td>
+                    <td>{{ t.question_count }}</td>
+                    <td>{{ t.total_responses }}</td>
+                    <td><span class="text-success fw-bold">{{ t.correct_count }}</span></td>
+                    <td><span class="text-danger">{{ t.incorrect_count }}</span></td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <span class="fw-bold me-2 {% if t.accuracy_pct < 60 %}text-danger{% else %}text-success{% endif %}">
+                                {{ t.accuracy_pct }}%
+                            </span>
+                            <div class="progress flex-grow-1" style="height: 6px; min-width: 80px;">
+                                <div class="progress-bar {% if t.accuracy_pct >= 75 %}bg-success{% elif t.accuracy_pct >= 60 %}bg-info{% else %}bg-danger{% endif %}"
+                                     role="progressbar" style="width: {{ t.accuracy_pct }}%;"></div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>{{ t.avg_time_sec }}s</td>
+                    <td>
+                        {% if t.is_flagged %}
+                            <span class="badge bg-warning text-dark border border-warning" title="{{ t.flag_reason }}">
+                                ⚠️ Low Accuracy (&lt;60%)
+                            </span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success">
+                                Satisfactory
+                            </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
